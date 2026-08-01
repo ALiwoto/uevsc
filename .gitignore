@@ -43,6 +43,9 @@
 build/
 Build/
 build-*/
+dist/
+node_modules/
+*.vsix
 
 # CMake generated files
 CMakeFiles/

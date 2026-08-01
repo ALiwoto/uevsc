@@ -1,0 +1,14 @@
+.git/**
+.gitignore
+.github/**
+.vscode/**
+src/**
+scripts/**
+node_modules/**
+*.vsix
+tsconfig.json
+package-lock.json
+AGENTS.md
+
+# Keep only the runtime WASM files copied by the build.
+!dist/**

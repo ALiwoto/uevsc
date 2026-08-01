@@ -1,2 +1,82 @@
 # uevsc
-A simple, useful and lightweight vscode extension for UE projects.
+
+A lightweight, syntax-only VS Code extension for reviewing Unreal Engine C++ projects.
+
+It indexes C/C++ source files in memory and provides:
+
+- hover cards with signatures, symbol kind, source location, and nearby documentation;
+- Ctrl+click / **Go to Definition** for classes, structs, enums, functions, methods, fields, variables, aliases, enum values, and macros;
+- receiver-aware member lookup, so `Spells->GetPreparedSpellId()` prefers members of the type declared for `Spells`;
+- automatic updates when files are edited, created, changed, or deleted;
+- tolerant parsing of incomplete code and common Unreal annotations such as `UCLASS`, `UPROPERTY`, `UFUNCTION`, `GENERATED_BODY`, and module `_API` macros.
+
+The extension does **not** compile code, invoke Unreal Engine, expand macros, read generated project metadata, or claim semantic correctness. It is intentionally an information and navigation aid for manual code review.
+
+## Install locally
+
+Prerequisites: Node.js and VS Code's `code` command on `PATH`.
+
+```powershell
+npm install
+npm run package
+code --install-extension .\uevsc-0.1.0.vsix --force
+```
+
+Then open the Unreal project (or a parent folder containing its `Source` and `Plugins` directories) in VS Code. Opening any C++ file activates the extension and builds the index. Reload VS Code after replacing an already-installed build.
+
+The packaged VSIX is self-contained. It does not require `node_modules`, Visual Studio, Unreal Engine, a compiler, or a language server at runtime.
+
+## Use
+
+- Hover an identifier to see the best matching declarations/definitions.
+- Hold Ctrl and click an identifier, or run **Go to Definition**.
+- Run **uevsc: Rebuild Symbol Index** after a large external change.
+- Run **uevsc: Show Index Statistics** to inspect indexed file/symbol counts.
+- Open **Output → uevsc** for indexing errors and optional trace output.
+
+For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration of `Spells`, reads its syntax-level type, and prefers `GetPreparedSpellId` symbols belonging to that class. It also understands direct type qualifiers such as `UPeaceboundSpellComponent::PrepareSpell` and simple call chains such as `GetControlledSpellComponent()->PrepareSpell` when the called function's return type is indexed.
+
+## Settings
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `uevsc.enabled` | `true` | Enables indexing and providers. |
+| `uevsc.include` | `**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}` | Workspace files to index. |
+| `uevsc.exclude` | Unreal build/generated directories | Files omitted from initial indexing. |
+| `uevsc.maxFileSizeKb` | `1024` | Skips unusually large source files. |
+| `uevsc.showMissingDefinitionMessage` | `true` | Shows a short status message for unresolved navigation. |
+| `uevsc.trace` | `false` | Logs per-file parsing details to the output channel. |
+
+`Binaries`, `Build`, `DerivedDataCache`, `Intermediate`, `Saved`, `.git`, and `node_modules` are always ignored by live file watching.
+
+## Accuracy and limitations
+
+This extension parses syntax, not the compiled C++ program. It deliberately does not know build flags, include paths, generated headers, macro expansions, overload viability, templates after instantiation, inheritance conversions, or runtime types.
+
+Resolution uses useful, deterministic hints:
+
+1. explicit type qualifiers;
+2. local variables, parameters, and fields used as `object.member` or `pointer->member` receivers;
+3. simple function-return receiver types;
+4. the containing class and current file;
+5. whether a candidate is a definition rather than only a declaration.
+
+When several candidates remain plausible, VS Code receives the ordered list instead of a fabricated single answer. When none exist, the extension reports that it could not find a definition.
+
+## Development
+
+```powershell
+npm run check
+npm test
+npm run build
+npm run package
+```
+
+The implementation is split into independent layers:
+
+- `src/parser`: tolerant Tree-sitter C++ symbol extraction and UE annotation masking;
+- `src/index`: in-memory per-file storage and syntax-level resolution;
+- `src/vscode`: editor adapters and hover/definition providers;
+- `src/extension.ts`: activation, commands, configuration, and lifecycle.
+
+The parser and resolver have no dependency on the VS Code API, which keeps them directly testable and provides a clean base for future include graphs, inheritance lookup, incremental syntax trees, workspace persistence, references, and outline features.
