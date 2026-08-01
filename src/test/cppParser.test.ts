@@ -52,3 +52,43 @@ bool UPeaceboundSpellComponent::PrepareSpell(EPeaceboundSpellId SpellId)
         parser.dispose();
     }
 });
+
+test("assigns locals to their nearest lexical scopes", async () => {
+    const parser = await CppParser.create(runtimeWasm, cppWasm);
+    const source = `
+void RunScopeTest(int32 Parameter)
+{
+    int32 Snapshot = Parameter;
+    {
+        int32 Snapshot = 2;
+        Consume(Snapshot);
+    }
+    for (int32 SlotIndex = 0; SlotIndex < 3; ++SlotIndex)
+    {
+        Consume(SlotIndex);
+    }
+    Consume(Snapshot);
+}
+`;
+
+    try {
+        const parsed = parser.parse("file:///scope.cpp", source);
+        const snapshots = parsed.symbols
+            .filter((symbol) => symbol.name === "Snapshot")
+            .sort((left, right) => left.selectionRange.start.line - right.selectionRange.start.line);
+        const outer = snapshots[0];
+        const inner = snapshots[1];
+        const slotIndex = parsed.symbols.find((symbol) => symbol.name === "SlotIndex" && symbol.kind === "variable");
+        const parameter = parsed.symbols.find((symbol) => symbol.name === "Parameter" && symbol.kind === "parameter");
+
+        assert.ok(outer?.visibilityRange);
+        assert.ok(inner?.visibilityRange);
+        assert.ok(slotIndex?.visibilityRange);
+        assert.ok(parameter?.visibilityRange);
+        assert.ok(outer.visibilityRange.end.line > inner.visibilityRange.end.line);
+        assert.ok(slotIndex.visibilityRange.end.line < outer.visibilityRange.end.line);
+        assert.equal(parameter.visibilityRange.end.line, outer.visibilityRange.end.line);
+    } finally {
+        parser.dispose();
+    }
+});

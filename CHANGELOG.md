@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Added lexical scope-aware lookup for local variables and parameters.
+- Added nested block and shadowing precedence.
+- Added containing-class precedence for unqualified fields and methods.
+
 ## 0.1.1
 
 - Fixed packaged parser startup by bundling web-tree-sitter's CommonJS entry.

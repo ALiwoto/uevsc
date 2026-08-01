@@ -2,7 +2,7 @@
     "name": "uevsc",
     "displayName": "UE in VSCode",
     "description": "Lightweight, syntax-only C++ navigation and hover information for Unreal Engine projects.",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "publisher": "aliwoto",
     "license": "MIT",
     "repository": {

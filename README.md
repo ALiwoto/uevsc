@@ -7,6 +7,7 @@ It indexes C/C++ source files in memory and provides:
 - hover cards with signatures, symbol kind, source location, and nearby documentation;
 - Ctrl+click / **Go to Definition** for classes, structs, enums, functions, methods, fields, variables, aliases, enum values, and macros;
 - receiver-aware member lookup, so `Spells->GetPreparedSpellId()` prefers members of the type declared for `Spells`;
+- lexical scope-aware lookup for locals, parameters, nested blocks, and shadowed names;
 - automatic updates when files are edited, created, changed, or deleted;
 - tolerant parsing of incomplete code and common Unreal annotations such as `UCLASS`, `UPROPERTY`, `UFUNCTION`, `GENERATED_BODY`, and module `_API` macros.
 
@@ -57,11 +58,12 @@ This extension parses syntax, not the compiled C++ program. It deliberately does
 
 Resolution uses useful, deterministic hints:
 
-1. explicit type qualifiers;
-2. local variables, parameters, and fields used as `object.member` or `pointer->member` receivers;
-3. simple function-return receiver types;
-4. the containing class and current file;
-5. whether a candidate is a definition rather than only a declaration.
+1. the nearest visible local variable or parameter, respecting declaration order and nested block boundaries;
+2. explicit type qualifiers;
+3. local variables, parameters, and fields used as `object.member` or `pointer->member` receivers;
+4. simple function-return receiver types;
+5. members of the containing class;
+6. the current file and whether a candidate is a definition rather than only a declaration.
 
 When several candidates remain plausible, VS Code receives the ordered list instead of a fabricated single answer. When none exist, the extension reports that it could not find a definition.
 

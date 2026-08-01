@@ -38,6 +38,18 @@ const UNREAL_ANNOTATION_MACROS = new Set([
     "GENERATED_IINTERFACE_BODY",
     "GENERATED_UINTERFACE_BODY",
 ]);
+const LEXICAL_SCOPE_TYPES = new Set([
+    "compound_statement",
+    "for_statement",
+    "for_range_loop",
+    "if_statement",
+    "switch_statement",
+    "while_statement",
+    "do_statement",
+    "try_statement",
+    "catch_clause",
+    "lambda_expression",
+]);
 
 interface ScopeEntry {
     readonly name: string;
@@ -269,8 +281,9 @@ export class CppParser {
             const typeScope = nearestTypeScope(scope);
             const isParameter = node.type.includes("parameter");
             const isField = node.type === "field_declaration" && Boolean(typeScope);
+            const isLocal = isParameter || isInsideFunction(node);
             const scopeNames = scope.map((item) => item.name);
-            const visibilityNode = nearestFunctionNode(node);
+            const visibilityNode = isParameter ? nearestFunctionNode(node) : nearestLexicalScopeNode(node);
             output.push({
                 name,
                 qualifiedName: qualify(scopeNames, name),
@@ -284,8 +297,8 @@ export class CppParser {
                 signature: normalizeSignature(node.text),
                 documentation: isField ? precedingDocumentation(lines, node.startPosition.row) : undefined,
                 isDefinition: true,
-                isLocal: isParameter || isInsideFunction(node),
-                visibilityRange: visibilityNode ? nodeRange(visibilityNode, lines) : undefined,
+                isLocal,
+                visibilityRange: isLocal && visibilityNode ? nodeRange(visibilityNode, lines) : undefined,
             });
         }
     }
@@ -332,6 +345,8 @@ export class CppParser {
         }
         const name = finalQualifiedPart(nameNode.text);
         const scopeNames = scope.map((item) => item.name);
+        const isLocal = isInsideFunction(node);
+        const visibilityNode = nearestLexicalScopeNode(node);
         output.push({
             name,
             qualifiedName: qualify(scopeNames, name),
@@ -344,7 +359,8 @@ export class CppParser {
             signature: normalizeSignature(node.text),
             documentation: precedingDocumentation(lines, node.startPosition.row),
             isDefinition: true,
-            isLocal: isInsideFunction(node),
+            isLocal,
+            visibilityRange: isLocal && visibilityNode ? nodeRange(visibilityNode, lines) : undefined,
         });
     }
 
@@ -520,6 +536,13 @@ function nearestFunctionNode(node: SyntaxNode): SyntaxNode | undefined {
         if (parent.type === "function_definition" || parent.type === "lambda_expression") return parent;
     }
     return undefined;
+}
+
+function nearestLexicalScopeNode(node: SyntaxNode): SyntaxNode | undefined {
+    for (let parent = node.parent; parent; parent = parent.parent) {
+        if (LEXICAL_SCOPE_TYPES.has(parent.type)) return parent;
+    }
+    return nearestFunctionNode(node);
 }
 
 function functionSignature(node: SyntaxNode, declarator: SyntaxNode): string {

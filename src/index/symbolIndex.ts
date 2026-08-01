@@ -66,6 +66,13 @@ export class SymbolIndex {
             qualifier ??
             this.resolveReceiverType(context.uri, context.position, receiverName, receiverCall, containingType);
 
+        if (!qualifier && !receiverName && !receiverCall) {
+            const locals = nearestVisibleLocals(candidates, context);
+            if (locals.length > 0) {
+                return { symbols: locals };
+            }
+        }
+
         let eligible = candidates.filter(
             (symbol) =>
                 !symbol.isLocal ||
@@ -76,6 +83,11 @@ export class SymbolIndex {
         if (receiverType) {
             const exactMembers = eligible.filter((symbol) => typeMatches(symbol.container, receiverType));
             if (exactMembers.length > 0) eligible = exactMembers;
+        } else if (containingType && !qualifier) {
+            const classMembers = eligible.filter(
+                (symbol) => !symbol.isLocal && typeMatches(symbol.container, containingType),
+            );
+            if (classMembers.length > 0) eligible = classMembers;
         }
 
         const scored = eligible
@@ -180,6 +192,44 @@ function extractReceiverCall(prefix: string): string | undefined {
 function extractQualifier(prefix: string): string | undefined {
     const match = prefix.match(/((?:[A-Za-z_]\w*::)*[A-Za-z_]\w*)::\s*$/);
     return match?.[1]?.split("::").at(-1);
+}
+
+function nearestVisibleLocals(candidates: readonly CppSymbol[], context: ResolutionContext): readonly CppSymbol[] {
+    const locals = candidates
+        .filter(
+            (symbol) =>
+                symbol.isLocal &&
+                symbol.uri === context.uri &&
+                Boolean(symbol.visibilityRange) &&
+                contains(symbol.visibilityRange!, context.position) &&
+                isBeforeOrAt(symbol.selectionRange.start, context.position),
+        )
+        .sort(compareLocalPrecedence);
+    const best = locals[0];
+    if (!best) return [];
+
+    return locals.filter(
+        (symbol) =>
+            comparePosition(symbol.selectionRange.start, best.selectionRange.start) === 0 &&
+            compareRange(symbol.visibilityRange!, best.visibilityRange!) === 0,
+    );
+}
+
+function compareLocalPrecedence(left: CppSymbol, right: CppSymbol): number {
+    const scopeSizeDifference = rangeSize(left.visibilityRange!) - rangeSize(right.visibilityRange!);
+    if (scopeSizeDifference !== 0) return scopeSizeDifference;
+    return comparePosition(right.selectionRange.start, left.selectionRange.start);
+}
+
+function rangeSize(range: { start: SourcePosition; end: SourcePosition }): number {
+    return (range.end.line - range.start.line) * 1_000_000 + range.end.character - range.start.character;
+}
+
+function compareRange(
+    left: { start: SourcePosition; end: SourcePosition },
+    right: { start: SourcePosition; end: SourcePosition },
+): number {
+    return comparePosition(left.start, right.start) || comparePosition(left.end, right.end);
 }
 
 function scoreSymbol(
