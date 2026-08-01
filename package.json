@@ -1,114 +1,121 @@
 {
-  "name": "uevsc",
-  "displayName": "UE in VSCode",
-  "description": "Lightweight, syntax-only C++ navigation and hover information for Unreal Engine projects.",
-  "version": "0.1.0",
-  "publisher": "aliwoto",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ALiwoto/uevsc.git"
-  },
-  "engines": {
-    "vscode": "^1.96.0"
-  },
-  "extensionKind": [
-    "workspace"
-  ],
-  "capabilities": {
-    "untrustedWorkspaces": {
-      "supported": true
-    }
-  },
-  "categories": [
-    "Programming Languages",
-    "Other"
-  ],
-  "keywords": [
-    "unreal-engine",
-    "ue5",
-    "cpp",
-    "c++",
-    "navigation"
-  ],
-  "activationEvents": [
-    "onLanguage:cpp",
-    "onLanguage:c"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "uevsc.rebuildIndex",
-        "title": "uevsc: Rebuild Symbol Index"
-      },
-      {
-        "command": "uevsc.showIndexStats",
-        "title": "uevsc: Show Index Statistics"
-      }
+    "name": "uevsc",
+    "displayName": "UE in VSCode",
+    "description": "Lightweight, syntax-only C++ navigation and hover information for Unreal Engine projects.",
+    "version": "0.1.1",
+    "publisher": "aliwoto",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ALiwoto/uevsc.git"
+    },
+    "engines": {
+        "vscode": "^1.96.0"
+    },
+    "extensionKind": [
+        "workspace"
     ],
-    "configuration": {
-      "title": "uevsc",
-      "properties": {
-        "uevsc.enabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable syntax-only C++ hover and definition navigation."
-        },
-        "uevsc.include": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "default": [
-            "**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}"
-          ],
-          "description": "Workspace-relative glob patterns to index."
-        },
-        "uevsc.exclude": {
-          "type": "string",
-          "default": "**/{Binaries,Build,DerivedDataCache,Intermediate,Saved,.git,node_modules}/**",
-          "description": "Glob pattern excluded from indexing."
-        },
-        "uevsc.maxFileSizeKb": {
-          "type": "number",
-          "default": 4096,
-          "minimum": 16,
-          "maximum": 16384,
-          "description": "Skip source files larger than this many KiB."
-        },
-        "uevsc.showMissingDefinitionMessage": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show a short status-bar message when a definition cannot be found."
-        },
-        "uevsc.trace": {
-          "type": "boolean",
-          "default": false,
-          "description": "Write detailed indexing and resolution information to the output channel."
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": true
         }
-      }
+    },
+    "categories": [
+        "Programming Languages",
+        "Other"
+    ],
+    "keywords": [
+        "unreal-engine",
+        "ue5",
+        "cpp",
+        "c++",
+        "navigation"
+    ],
+    "activationEvents": [
+        "onLanguage:cpp",
+        "onLanguage:c"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "uevsc.rebuildIndex",
+                "title": "uevsc: Rebuild Symbol Index"
+            },
+            {
+                "command": "uevsc.showIndexStats",
+                "title": "uevsc: Show Index Statistics"
+            }
+        ],
+        "configuration": {
+            "title": "uevsc",
+            "properties": {
+                "uevsc.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable syntax-only C++ hover and definition navigation."
+                },
+                "uevsc.include": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}"
+                    ],
+                    "description": "Workspace-relative glob patterns to index."
+                },
+                "uevsc.exclude": {
+                    "type": "string",
+                    "default": "**/{Binaries,Build,DerivedDataCache,Intermediate,Saved,.git,node_modules}/**",
+                    "description": "Glob pattern excluded from indexing."
+                },
+                "uevsc.maxFileSizeKb": {
+                    "type": "number",
+                    "default": 4096,
+                    "minimum": 16,
+                    "maximum": 16384,
+                    "description": "Skip source files larger than this many KiB."
+                },
+                "uevsc.showMissingDefinitionMessage": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show a short status-bar message when a definition cannot be found."
+                },
+                "uevsc.trace": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Write detailed indexing and resolution information to the output channel."
+                }
+            }
+        }
+    },
+    "scripts": {
+        "clean": "node scripts/clean.mjs",
+        "check": "tsc --noEmit",
+        "build": "node scripts/build.mjs",
+        "watch": "node scripts/build.mjs --watch",
+        "test": "node --import tsx --test src/test/cppParser.test.ts src/test/symbolIndex.test.ts",
+        "test:bundle": "node scripts/smoke-bundle.mjs",
+        "test:extension": "node scripts/smoke-extension.mjs",
+        "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.{mjs,ts}\" package.json tsconfig.json .prettierrc.json",
+        "format:check": "prettier --check \"src/**/*.ts\" \"scripts/**/*.{mjs,ts}\" package.json tsconfig.json .prettierrc.json",
+        "package": "npm run format:check && npm run check && npm run test && npm run test:bundle && npm run build && npm run test:extension && vsce package --no-dependencies"
+    },
+    "dependencies": {
+        "minimatch": "^10.0.3",
+        "source-map-support": "^0.5.21",
+        "web-tree-sitter": "^0.26.11"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.0",
+        "@types/source-map-support": "^0.5.10",
+        "@types/vscode": "1.96.0",
+        "@vscode/vsce": "^3.9.2",
+        "esbuild": "^0.28.1",
+        "prettier": "^3.6.2",
+        "tree-sitter-cpp": "^0.23.4",
+        "tsx": "^4.20.0",
+        "typescript": "^5.9.0"
     }
-  },
-  "scripts": {
-    "clean": "node scripts/clean.mjs",
-    "check": "tsc --noEmit",
-    "build": "node scripts/build.mjs",
-    "watch": "node scripts/build.mjs --watch",
-    "test": "node --import tsx --test src/test/cppParser.test.ts src/test/symbolIndex.test.ts",
-    "package": "npm run check && npm run test && npm run build && vsce package --no-dependencies"
-  },
-  "dependencies": {
-    "minimatch": "^10.0.3",
-    "web-tree-sitter": "^0.26.11"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.0",
-    "@types/vscode": "1.96.0",
-    "@vscode/vsce": "^3.9.2",
-    "esbuild": "^0.28.1",
-    "tree-sitter-cpp": "^0.23.4",
-    "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
-  }
 }

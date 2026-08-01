@@ -19,7 +19,7 @@ Prerequisites: Node.js and VS Code's `code` command on `PATH`.
 ```powershell
 npm install
 npm run package
-code --install-extension .\uevsc-0.1.0.vsix --force
+code --install-extension .\uevsc-0.1.1.vsix --force
 ```
 
 Then open the Unreal project (or a parent folder containing its `Source` and `Plugins` directories) in VS Code. Opening any C++ file activates the extension and builds the index. Reload VS Code after replacing an already-installed build.
@@ -33,6 +33,8 @@ The packaged VSIX is self-contained. It does not require `node_modules`, Visual 
 - Run **uevsc: Rebuild Symbol Index** after a large external change.
 - Run **uevsc: Show Index Statistics** to inspect indexed file/symbol counts.
 - Open **Output → uevsc** for indexing errors and optional trace output.
+
+The output channel records the extension, VS Code, Node, platform, WASM paths and sizes, parser initialization stages, and full source-mapped stack traces for startup failures.
 
 For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration of `Spells`, reads its syntax-level type, and prefers `GetPreparedSpellId` symbols belonging to that class. It also understands direct type qualifiers such as `UPeaceboundSpellComponent::PrepareSpell` and simple call chains such as `GetControlledSpellComponent()->PrepareSpell` when the called function's return type is indexed.
 
@@ -68,6 +70,7 @@ When several candidates remain plausible, VS Code receives the ordered list inst
 ```powershell
 npm run check
 npm test
+npm run test:bundle
 npm run build
 npm run package
 ```

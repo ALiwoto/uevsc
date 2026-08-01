@@ -1,5 +1,7 @@
 .git/**
 .gitignore
+.prettierignore
+.prettierrc.json
 .github/**
 .vscode/**
 src/**
