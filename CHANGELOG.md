@@ -3,6 +3,11 @@
 ## Unreleased
 
 - Added Unreal C++ syntax highlighting for module export macros ending in `_API`.
+- Added theme-independent type and variable-name highlighting for reflected and ordinary Unreal C++ declarations.
+- Added highlighting and static informational hovers for popular Unreal Engine constants.
+- Fixed function prototypes being partially misclassified as variable declarations.
+- Fixed ordinary declaration highlighting offsets after emoji and other non-BMP characters.
+- Fixed type highlighting ranges being shifted left by leading tabs or spaces.
 - Suppressed hover and definition lookup on C/C++ keywords.
 - Replaced verbose hover source paths with compact clickable file-and-line links.
 

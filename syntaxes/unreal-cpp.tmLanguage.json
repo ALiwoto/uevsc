@@ -4,10 +4,50 @@
     "injectionSelector": "L:source.cpp -comment -string",
     "patterns": [
         {
+            "include": "#reflected-property"
+        },
+        {
             "include": "#module-export-macro"
         }
     ],
     "repository": {
+        "reflected-property": {
+            "name": "meta.declaration.property.unreal.cpp",
+            "begin": "(\\bUPROPERTY\\b)(\\s*)(\\()",
+            "beginCaptures": {
+                "1": {
+                    "name": "entity.name.function.preprocessor.cpp"
+                },
+                "3": {
+                    "name": "punctuation.section.arguments.begin.bracket.round.cpp"
+                }
+            },
+            "end": ";",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.terminator.statement.cpp"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#reflected-field-declaration"
+                },
+                {
+                    "include": "$base"
+                }
+            ]
+        },
+        "reflected-field-declaration": {
+            "match": "\\b((?:(?:const|volatile|mutable)\\s+)*(?:(?:[A-Za-z_]\\w*::)*[A-Za-z_]\\w*)(?:\\s*<[^;{}()]+>)?(?:\\s*[*&])?)\\s+([A-Za-z_]\\w*)\\s*(?=\\s*(?:[=;:{]|\\[))",
+            "captures": {
+                "1": {
+                    "name": "entity.name.type.class.cpp"
+                },
+                "2": {
+                    "name": "variable.other.property.cpp"
+                }
+            }
+        },
         "module-export-macro": {
             "name": "keyword.other.unreal.export-macro.cpp",
             "match": "\\b[A-Z][A-Z0-9_]*_API\\b"

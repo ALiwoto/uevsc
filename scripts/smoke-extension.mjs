@@ -14,11 +14,90 @@ const watcher = {
     onDidChange: event,
     onDidDelete: event,
 };
+class ThemeColor {
+    constructor(id) {
+        this.id = id;
+    }
+}
+class Range {
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
+    }
+}
+class MarkdownString {
+    constructor(value = "") {
+        this.value = value;
+        this.isTrusted = false;
+    }
+
+    appendCodeblock(value, language) {
+        this.value += `\n\`\`\`${language}\n${value}\n\`\`\`\n`;
+        return this;
+    }
+
+    appendMarkdown(value) {
+        this.value += value;
+        return this;
+    }
+}
+class Hover {
+    constructor(contents, range) {
+        this.contents = contents;
+        this.range = range;
+    }
+}
+const decorations = new Map();
+const definitionProviders = [];
+const hoverProviders = [];
+const fixtureSource =
+    "// 🎮 UI fields\nUPROPERTY()\n\tTObjectPtr<UTexture2D> ScrollbarTrackTexture;\n\tTSharedPtr<SMyGamePauseScreen> PauseScreen;\n\tif (SelectedIndex == INDEX_NONE) {}\n";
+const fixtureDocument = {
+    languageId: "cpp",
+    uri: { toString: () => "file:///fixture.h" },
+    getText(range) {
+        if (!range) return fixtureSource;
+        return fixtureSource.slice(this.offsetAt(range.start), this.offsetAt(range.end));
+    },
+    positionAt(offset) {
+        const prefix = fixtureSource.slice(0, offset);
+        const lines = prefix.split("\n");
+        return { line: lines.length - 1, character: lines.at(-1).length };
+    },
+    offsetAt(position) {
+        const lines = fixtureSource.split("\n");
+        let offset = 0;
+        for (let line = 0; line < position.line; line++) offset += lines[line].length + 1;
+        return offset + position.character;
+    },
+    getWordRangeAtPosition(position) {
+        const lines = fixtureSource.split("\n");
+        const line = lines[position.line] ?? "";
+        let start = position.character;
+        let end = position.character;
+        while (start > 0 && /[A-Za-z0-9_]/.test(line[start - 1])) start--;
+        while (end < line.length && /[A-Za-z0-9_]/.test(line[end])) end++;
+        return start === end
+            ? undefined
+            : new Range({ line: position.line, character: start }, { line: position.line, character: end });
+    },
+};
+const fixtureEditor = {
+    document: fixtureDocument,
+    setDecorations(decoration, ranges) {
+        decorations.set(decoration.id, ranges);
+    },
+};
 
 const vscode = {
     version: "smoke-test",
     ProgressLocation: { Window: 10 },
+    ThemeColor,
+    Range,
+    MarkdownString,
+    Hover,
     window: {
+        visibleTextEditors: [fixtureEditor],
         createOutputChannel() {
             const lines = [];
             return {
@@ -32,6 +111,9 @@ const vscode = {
         showErrorMessage: async () => undefined,
         showInformationMessage: async () => undefined,
         setStatusBarMessage: () => disposable,
+        createTextEditorDecorationType: (options) => ({ ...disposable, id: options.color.id }),
+        onDidChangeVisibleTextEditors: event,
+        onDidChangeActiveTextEditor: event,
         withProgress: async (_options, task) => task({ report() {} }),
     },
     workspace: {
@@ -45,8 +127,14 @@ const vscode = {
         findFiles: async () => [],
     },
     languages: {
-        registerDefinitionProvider: () => disposable,
-        registerHoverProvider: () => disposable,
+        registerDefinitionProvider(_selector, provider) {
+            definitionProviders.push(provider);
+            return disposable;
+        },
+        registerHoverProvider(_selector, provider) {
+            hoverProviders.push(provider);
+            return disposable;
+        },
     },
     commands: {
         registerCommand: () => disposable,
@@ -74,6 +162,52 @@ try {
     const successfulOutput = await activate(extension, root);
     if (!successfulOutput.lines.some((line) => line.includes("C++ parser initialized successfully."))) {
         throw new Error("The packaged extension did not initialize its C++ parser.");
+    }
+    const typeRanges = decorations.get("uevsc.unrealTypeForeground");
+    if (typeRanges?.length !== 4) {
+        throw new Error("The packaged extension did not decorate annotated and ordinary member type names.");
+    }
+    const sharedPointerRange = typeRanges[2];
+    if (
+        sharedPointerRange.start.line !== 3 ||
+        sharedPointerRange.start.character !== 1 ||
+        sharedPointerRange.end.character !== 11
+    ) {
+        throw new Error("The packaged extension did not preserve UTF-16 offsets for ordinary member types.");
+    }
+    const propertyRanges = decorations.get("uevsc.unrealPropertyForeground");
+    if (propertyRanges?.length !== 2) {
+        throw new Error("The packaged extension did not decorate annotated and ordinary member names.");
+    }
+    const pauseScreenRange = propertyRanges[1];
+    if (
+        pauseScreenRange.start.line !== 3 ||
+        pauseScreenRange.start.character !== 32 ||
+        pauseScreenRange.end.character !== 43
+    ) {
+        throw new Error("The packaged extension did not preserve UTF-16 offsets for ordinary member names.");
+    }
+    const constantRanges = decorations.get("uevsc.unrealConstantForeground");
+    if (constantRanges?.length !== 1) {
+        throw new Error("The packaged extension did not decorate known Unreal Engine constants.");
+    }
+    const constantOffset = fixtureSource.indexOf("INDEX_NONE") + 2;
+    const constantPosition = fixtureDocument.positionAt(constantOffset);
+    const constantHover = hoverProviders.at(-1)?.provideHover(fixtureDocument, constantPosition);
+    const constantHoverText = constantHover?.contents?.value ?? "";
+    if (
+        !constantHoverText.includes("enum { INDEX_NONE = -1 };") ||
+        !constantHoverText.includes("**Type:** `anonymous unscoped enum constant`") ||
+        !constantHoverText.includes("**Value:** `-1`") ||
+        constantHoverText.includes("command:") ||
+        constantHoverText.includes("](") ||
+        constantHover.contents.isTrusted !== false
+    ) {
+        throw new Error("The packaged extension did not return a static informational hover for INDEX_NONE.");
+    }
+    const constantDefinition = definitionProviders.at(-1)?.provideDefinition(fixtureDocument, constantPosition);
+    if (constantDefinition !== undefined) {
+        throw new Error("Known Unreal Engine constants unexpectedly provided definition navigation.");
     }
     extension.deactivate();
     console.log("Packaged extension activation smoke test passed.");

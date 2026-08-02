@@ -37,6 +37,38 @@
     ],
     "main": "./dist/extension.js",
     "contributes": {
+        "colors": [
+            {
+                "id": "uevsc.unrealTypeForeground",
+                "description": "Foreground color for Unreal types in C++ variable declarations.",
+                "defaults": {
+                    "dark": "#4EC9B0",
+                    "light": "#267F99",
+                    "highContrast": "#6FE8D4",
+                    "highContrastLight": "#005A6F"
+                }
+            },
+            {
+                "id": "uevsc.unrealPropertyForeground",
+                "description": "Foreground color for Unreal C++ field and variable names.",
+                "defaults": {
+                    "dark": "#9CDCFE",
+                    "light": "#001080",
+                    "highContrast": "#B5E7FF",
+                    "highContrastLight": "#001080"
+                }
+            },
+            {
+                "id": "uevsc.unrealConstantForeground",
+                "description": "Foreground color for known Unreal Engine constants.",
+                "defaults": {
+                    "dark": "#4FC1FF",
+                    "light": "#0070C1",
+                    "highContrast": "#75BEFF",
+                    "highContrastLight": "#005A9E"
+                }
+            }
+        ],
         "grammars": [
             {
                 "scopeName": "uevsc.unreal-cpp.injection",
@@ -63,6 +95,11 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Enable syntax-only C++ hover and definition navigation."
+                },
+                "uevsc.syntaxHighlighting.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Apply visible Unreal-specific highlighting to C++ variable declarations."
                 },
                 "uevsc.include": {
                     "type": "array",
@@ -104,7 +141,7 @@
         "check": "tsc --noEmit",
         "build": "node scripts/build.mjs",
         "watch": "node scripts/build.mjs --watch",
-        "test": "node --import tsx --test src/test/cppKeywords.test.ts src/test/cppParser.test.ts src/test/hoverMarkdown.test.ts src/test/symbolIndex.test.ts src/test/syntaxGrammar.test.ts",
+        "test": "node --import tsx --test src/test/cppKeywords.test.ts src/test/cppParser.test.ts src/test/hoverMarkdown.test.ts src/test/symbolIndex.test.ts src/test/syntaxGrammar.test.ts src/test/unrealConstants.test.ts src/test/unrealPropertyDeclarations.test.ts",
         "test:bundle": "node scripts/smoke-bundle.mjs",
         "test:extension": "node scripts/smoke-extension.mjs",
         "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.{mjs,ts}\" package.json tsconfig.json .prettierrc.json",

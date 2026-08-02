@@ -5,7 +5,8 @@ A lightweight, syntax-only VS Code extension for reviewing Unreal Engine C++ pro
 It indexes C/C++ source files in memory and provides:
 
 - hover cards with signatures, symbol kind, source location, and nearby documentation;
-- Unreal-aware syntax highlighting, beginning with module export macros such as `MYGAME_API`;
+- Unreal-aware syntax highlighting for module export macros such as `MYGAME_API` and reflected `UPROPERTY` field declarations;
+- highlighted popular Unreal constants with static type, value, and usage descriptions on hover;
 - Ctrl+click / **Go to Definition** for classes, structs, enums, functions, methods, fields, variables, aliases, enum values, and macros;
 - receiver-aware member lookup, so `Spells->GetPreparedSpellId()` prefers members of the type declared for `Spells`;
 - lexical scope-aware lookup for locals, parameters, nested blocks, and shadowed names;
@@ -45,6 +46,7 @@ For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration 
 | Setting                              | Default                                    | Purpose                                                 |
 | ------------------------------------ | ------------------------------------------ | ------------------------------------------------------- |
 | `uevsc.enabled`                      | `true`                                     | Enables indexing and providers.                         |
+| `uevsc.syntaxHighlighting.enabled`   | `true`                                     | Applies explicit Unreal type and variable colors.       |
 | `uevsc.include`                      | `**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}` | Workspace files to index.                               |
 | `uevsc.exclude`                      | Unreal build/generated directories         | Files omitted from initial indexing.                    |
 | `uevsc.maxFileSizeKb`                | `1024`                                     | Skips unusually large source files.                     |
@@ -52,6 +54,8 @@ For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration 
 | `uevsc.trace`                        | `false`                                    | Logs per-file parsing details to the output channel.    |
 
 `Binaries`, `Build`, `DerivedDataCache`, `Intermediate`, `Saved`, `.git`, and `node_modules` are always ignored by live file watching.
+
+The Unreal declaration and constant colors can be customized through `workbench.colorCustomizations` using `uevsc.unrealTypeForeground`, `uevsc.unrealPropertyForeground`, and `uevsc.unrealConstantForeground`.
 
 ## Accuracy and limitations
 

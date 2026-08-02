@@ -7,12 +7,14 @@ import { SymbolIndex } from "./index/symbolIndex.js";
 import { WorkspaceIndexer } from "./index/workspaceIndexer.js";
 import { CppParser } from "./parser/cppParser.js";
 import { CppDefinitionProvider, CppHoverProvider } from "./vscode/providers.js";
+import { UnrealSyntaxHighlighter } from "./vscode/unrealSyntaxHighlighter.js";
 
 let parser: CppParser | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const output = vscode.window.createOutputChannel("uevsc");
-    context.subscriptions.push(output);
+    const syntaxHighlighter = new UnrealSyntaxHighlighter();
+    context.subscriptions.push(output, syntaxHighlighter);
 
     const log = (level: "info" | "error", message: string): void => {
         output.appendLine(`${new Date().toISOString()} [${level}] ${message}`);

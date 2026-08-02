@@ -4,8 +4,9 @@ import * as vscode from "vscode";
 import type { CppSymbol } from "../core/model.js";
 import type { SymbolIndex } from "../index/symbolIndex.js";
 import { isCppKeyword } from "../language/cppKeywords.js";
+import { getUnrealConstant, type UnrealConstantInfo } from "../language/unrealConstants.js";
 import { toLocation } from "./conversions.js";
-import { escapeMarkdown, formatHoverSource } from "./hoverMarkdown.js";
+import { escapeMarkdown, formatHoverSource, formatUnrealConstantDetails } from "./hoverMarkdown.js";
 
 export class CppDefinitionProvider implements vscode.DefinitionProvider {
     constructor(private readonly index: SymbolIndex) {}
@@ -14,6 +15,7 @@ export class CppDefinitionProvider implements vscode.DefinitionProvider {
         document: vscode.TextDocument,
         position: vscode.Position,
     ): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> {
+        if (unrealConstantAt(document, position)) return undefined;
         const lookup = lookupAt(document, position, this.index);
         if (!lookup) return undefined;
         if (lookup.symbols.length === 0) {
@@ -32,6 +34,9 @@ export class CppHoverProvider implements vscode.HoverProvider {
     constructor(private readonly index: SymbolIndex) {}
 
     provideHover(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.Hover> {
+        const knownConstant = unrealConstantAt(document, position);
+        if (knownConstant) return constantHover(knownConstant.constant, knownConstant.range);
+
         const lookup = lookupAt(document, position, this.index);
         if (!lookup || lookup.symbols.length === 0) return undefined;
 
@@ -49,6 +54,21 @@ export class CppHoverProvider implements vscode.HoverProvider {
         }
         return new vscode.Hover(markdown, document.getWordRangeAtPosition(position, /[A-Za-z_]\w*/));
     }
+}
+
+function unrealConstantAt(document: vscode.TextDocument, position: vscode.Position) {
+    const range = document.getWordRangeAtPosition(position, /[A-Za-z_]\w*/);
+    if (!range) return undefined;
+    const constant = getUnrealConstant(document.getText(range));
+    return constant ? { constant, range } : undefined;
+}
+
+function constantHover(constant: UnrealConstantInfo, range: vscode.Range): vscode.Hover {
+    const markdown = new vscode.MarkdownString(undefined, true);
+    markdown.isTrusted = false;
+    markdown.appendCodeblock(constant.declaration, "cpp");
+    markdown.appendMarkdown(`\n${formatUnrealConstantDetails(constant)}`);
+    return new vscode.Hover(markdown, range);
 }
 
 function lookupAt(document: vscode.TextDocument, position: vscode.Position, index: SymbolIndex) {
