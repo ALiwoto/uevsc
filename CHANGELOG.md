@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added Unreal C++ syntax highlighting for module export macros ending in `_API`.
+- Suppressed hover and definition lookup on C/C++ keywords.
+- Replaced verbose hover source paths with compact clickable file-and-line links.
+
 ## 0.2.0
 
 - Added lexical scope-aware lookup for local variables and parameters.

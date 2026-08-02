@@ -1,8 +1,11 @@
+import { posix } from "node:path";
 import * as vscode from "vscode";
 
 import type { CppSymbol } from "../core/model.js";
 import type { SymbolIndex } from "../index/symbolIndex.js";
+import { isCppKeyword } from "../language/cppKeywords.js";
 import { toLocation } from "./conversions.js";
+import { escapeMarkdown, formatHoverSource } from "./hoverMarkdown.js";
 
 export class CppDefinitionProvider implements vscode.DefinitionProvider {
     constructor(private readonly index: SymbolIndex) {}
@@ -38,10 +41,7 @@ export class CppHoverProvider implements vscode.HoverProvider {
         for (const [index, symbol] of symbols.entries()) {
             if (index > 0) markdown.appendMarkdown("\n\n---\n\n");
             markdown.appendCodeblock(symbol.signature || symbol.qualifiedName, "cpp");
-            const relative = vscode.workspace.asRelativePath(vscode.Uri.parse(symbol.uri), false);
-            const location = `${relative}:${symbol.selectionRange.start.line + 1}`;
-            const classification = [symbol.kind, symbol.isDefinition ? "definition" : "declaration"].join(" · ");
-            markdown.appendMarkdown(`\n${escapeMarkdown(classification)} — ${escapeMarkdown(location)}`);
+            markdown.appendMarkdown(`\n${hoverSource(symbol)}`);
             if (symbol.documentation) markdown.appendMarkdown(`\n\n${escapeMarkdown(symbol.documentation)}`);
         }
         if (lookup.symbols.length > symbols.length) {
@@ -55,6 +55,7 @@ function lookupAt(document: vscode.TextDocument, position: vscode.Position, inde
     const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z_]\w*/);
     if (!wordRange) return undefined;
     const word = document.getText(wordRange);
+    if (isCppKeyword(word)) return undefined;
     const linePrefix = document.lineAt(position.line).text.slice(0, wordRange.start.character);
     const result = index.resolve({
         uri: document.uri.toString(),
@@ -63,6 +64,14 @@ function lookupAt(document: vscode.TextDocument, position: vscode.Position, inde
         linePrefix,
     });
     return { ...result, word };
+}
+
+function hoverSource(symbol: CppSymbol): string {
+    const line = symbol.selectionRange.start.line + 1;
+    const uri = vscode.Uri.parse(symbol.uri);
+    const fileName = posix.basename(uri.path) || uri.authority;
+    const target = uri.with({ fragment: `L${line}` }).toString();
+    return formatHoverSource(symbol.kind, { fileName, line, target });
 }
 
 function uniqueLocations(symbols: readonly CppSymbol[]): CppSymbol[] {
@@ -88,8 +97,4 @@ function uniqueSignatures(symbols: readonly CppSymbol[]): CppSymbol[] {
         seen.add(key);
         return true;
     });
-}
-
-function escapeMarkdown(value: string): string {
-    return value.replace(/[\\`*_{}\[\]()<>#+\-.!|]/g, "\\$&");
 }

@@ -37,6 +37,15 @@
     ],
     "main": "./dist/extension.js",
     "contributes": {
+        "grammars": [
+            {
+                "scopeName": "uevsc.unreal-cpp.injection",
+                "path": "./syntaxes/unreal-cpp.tmLanguage.json",
+                "injectTo": [
+                    "source.cpp"
+                ]
+            }
+        ],
         "commands": [
             {
                 "command": "uevsc.rebuildIndex",
@@ -95,7 +104,7 @@
         "check": "tsc --noEmit",
         "build": "node scripts/build.mjs",
         "watch": "node scripts/build.mjs --watch",
-        "test": "node --import tsx --test src/test/cppParser.test.ts src/test/symbolIndex.test.ts",
+        "test": "node --import tsx --test src/test/cppKeywords.test.ts src/test/cppParser.test.ts src/test/hoverMarkdown.test.ts src/test/symbolIndex.test.ts src/test/syntaxGrammar.test.ts",
         "test:bundle": "node scripts/smoke-bundle.mjs",
         "test:extension": "node scripts/smoke-extension.mjs",
         "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.{mjs,ts}\" package.json tsconfig.json .prettierrc.json",

@@ -8,19 +8,12 @@ test("uses a local receiver's type to choose the matching class member", () => {
     const index = new SymbolIndex();
     index.replaceFile(
         file("file:///caller.cpp", [
-            symbol("Spells", "variable", "file:///caller.cpp", 10, "UPeaceboundSpellComponent *", undefined, true),
+            symbol("Spells", "variable", "file:///caller.cpp", 10, "UMyGameSpellComponent *", undefined, true),
         ]),
     );
     index.replaceFile(
         file("file:///spell.h", [
-            symbol(
-                "GetPreparedSpellId",
-                "method",
-                "file:///spell.h",
-                20,
-                "EPeaceboundSpellId",
-                "UPeaceboundSpellComponent",
-            ),
+            symbol("GetPreparedSpellId", "method", "file:///spell.h", 20, "EMyGameSpellId", "UMyGameSpellComponent"),
         ]),
     );
     index.replaceFile(
@@ -36,9 +29,9 @@ test("uses a local receiver's type to choose the matching class member", () => {
         linePrefix: "    if (Spells->",
     });
 
-    assert.equal(result.receiverType, "UPeaceboundSpellComponent");
+    assert.equal(result.receiverType, "UMyGameSpellComponent");
     assert.equal(result.symbols.length, 1);
-    assert.equal(result.symbols[0]?.container, "UPeaceboundSpellComponent");
+    assert.equal(result.symbols[0]?.container, "UMyGameSpellComponent");
 });
 
 test("uses the containing implementation and a receiver call's return type", () => {
@@ -52,7 +45,7 @@ test("uses the containing implementation and a receiver call's return type", () 
                     "file:///controller.cpp",
                     10,
                     "void",
-                    "APeaceboundPlayerController",
+                    "AMyGamePlayerController",
                 ),
                 range: { start: { line: 10, character: 0 }, end: { line: 30, character: 0 } },
             },
@@ -61,14 +54,14 @@ test("uses the containing implementation and a receiver call's return type", () 
                 "method",
                 "file:///controller.cpp",
                 2,
-                "UPeaceboundSpellComponent *",
-                "APeaceboundPlayerController",
+                "UMyGameSpellComponent *",
+                "AMyGamePlayerController",
             ),
         ]),
     );
     index.replaceFile(
         file("file:///spell.h", [
-            symbol("PrepareSpell", "method", "file:///spell.h", 20, "bool", "UPeaceboundSpellComponent"),
+            symbol("PrepareSpell", "method", "file:///spell.h", 20, "bool", "UMyGameSpellComponent"),
         ]),
     );
     index.replaceFile(
@@ -82,9 +75,9 @@ test("uses the containing implementation and a receiver call's return type", () 
         linePrefix: "    GetControlledSpellComponent()->",
     });
 
-    assert.equal(result.receiverType, "UPeaceboundSpellComponent");
+    assert.equal(result.receiverType, "UMyGameSpellComponent");
     assert.equal(result.symbols.length, 1);
-    assert.equal(result.symbols[0]?.container, "UPeaceboundSpellComponent");
+    assert.equal(result.symbols[0]?.container, "UMyGameSpellComponent");
 });
 
 test("returns only the nearest visible local instead of workspace-wide names", () => {

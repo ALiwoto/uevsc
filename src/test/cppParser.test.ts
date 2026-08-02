@@ -11,42 +11,42 @@ test("extracts UE-style classes, methods, fields, definitions, and locals", asyn
     const parser = await CppParser.create(runtimeWasm, cppWasm);
     const source = `
 /** Spell state owned by the player. */
-UCLASS(ClassGroup=(Peacebound))
-class PEACEBOUND_API UPeaceboundSpellComponent final : public UActorComponent
+UCLASS(ClassGroup=(MyGame))
+class MYGAME_API UMyGameSpellComponent final : public UActorComponent
 {
     GENERATED_BODY()
 public:
-    EPeaceboundSpellId GetPreparedSpellId() const { return PreparedSpellId; }
-    bool PrepareSpell(EPeaceboundSpellId SpellId);
+    EMyGameSpellId GetPreparedSpellId() const { return PreparedSpellId; }
+    bool PrepareSpell(EMyGameSpellId SpellId);
 private:
-    EPeaceboundSpellId PreparedSpellId = EPeaceboundSpellId::None;
+    EMyGameSpellId PreparedSpellId = EMyGameSpellId::None;
 };
 
-bool UPeaceboundSpellComponent::PrepareSpell(EPeaceboundSpellId SpellId)
+bool UMyGameSpellComponent::PrepareSpell(EMyGameSpellId SpellId)
 {
-    UPeaceboundSpellComponent* Spells = this;
+    UMyGameSpellComponent* Spells = this;
     return Spells->GetPreparedSpellId() != SpellId;
 }
 `;
 
     try {
         const parsed = parser.parse("file:///fixture.cpp", source);
-        assert.equal(parsed.symbols.find((symbol) => symbol.name === "UPeaceboundSpellComponent")?.kind, "class");
+        assert.equal(parsed.symbols.find((symbol) => symbol.name === "UMyGameSpellComponent")?.kind, "class");
 
         const getter = parsed.symbols.find((symbol) => symbol.name === "GetPreparedSpellId");
-        assert.equal(getter?.container, "UPeaceboundSpellComponent");
+        assert.equal(getter?.container, "UMyGameSpellComponent");
         assert.equal(getter?.isDefinition, true);
-        assert.match(getter?.signature ?? "", /EPeaceboundSpellId GetPreparedSpellId\(\) const/);
+        assert.match(getter?.signature ?? "", /EMyGameSpellId GetPreparedSpellId\(\) const/);
 
         const implementation = parsed.symbols.find((symbol) => symbol.name === "PrepareSpell" && symbol.isDefinition);
-        assert.equal(implementation?.qualifiedName, "UPeaceboundSpellComponent::PrepareSpell");
+        assert.equal(implementation?.qualifiedName, "UMyGameSpellComponent::PrepareSpell");
         assert.equal(implementation?.type, "bool");
 
         const field = parsed.symbols.find((symbol) => symbol.name === "PreparedSpellId" && symbol.kind === "field");
-        assert.equal(field?.type, "EPeaceboundSpellId");
+        assert.equal(field?.type, "EMyGameSpellId");
 
         const local = parsed.symbols.find((symbol) => symbol.name === "Spells");
-        assert.equal(local?.type, "UPeaceboundSpellComponent *");
+        assert.equal(local?.type, "UMyGameSpellComponent *");
         assert.equal(local?.isLocal, true);
     } finally {
         parser.dispose();

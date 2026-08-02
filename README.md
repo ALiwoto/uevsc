@@ -5,6 +5,7 @@ A lightweight, syntax-only VS Code extension for reviewing Unreal Engine C++ pro
 It indexes C/C++ source files in memory and provides:
 
 - hover cards with signatures, symbol kind, source location, and nearby documentation;
+- Unreal-aware syntax highlighting, beginning with module export macros such as `MYGAME_API`;
 - Ctrl+click / **Go to Definition** for classes, structs, enums, functions, methods, fields, variables, aliases, enum values, and macros;
 - receiver-aware member lookup, so `Spells->GetPreparedSpellId()` prefers members of the type declared for `Spells`;
 - lexical scope-aware lookup for locals, parameters, nested blocks, and shadowed names;
@@ -37,18 +38,18 @@ The packaged VSIX is self-contained. It does not require `node_modules`, Visual 
 
 The output channel records the extension, VS Code, Node, platform, WASM paths and sizes, parser initialization stages, and full source-mapped stack traces for startup failures.
 
-For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration of `Spells`, reads its syntax-level type, and prefers `GetPreparedSpellId` symbols belonging to that class. It also understands direct type qualifiers such as `UPeaceboundSpellComponent::PrepareSpell` and simple call chains such as `GetControlledSpellComponent()->PrepareSpell` when the called function's return type is indexed.
+For `Spells->GetPreparedSpellId()`, the extension finds the nearest declaration of `Spells`, reads its syntax-level type, and prefers `GetPreparedSpellId` symbols belonging to that class. It also understands direct type qualifiers such as `UMyGameSpellComponent::PrepareSpell` and simple call chains such as `GetControlledSpellComponent()->PrepareSpell` when the called function's return type is indexed.
 
 ## Settings
 
-| Setting | Default | Purpose |
-| --- | --- | --- |
-| `uevsc.enabled` | `true` | Enables indexing and providers. |
-| `uevsc.include` | `**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}` | Workspace files to index. |
-| `uevsc.exclude` | Unreal build/generated directories | Files omitted from initial indexing. |
-| `uevsc.maxFileSizeKb` | `1024` | Skips unusually large source files. |
-| `uevsc.showMissingDefinitionMessage` | `true` | Shows a short status message for unresolved navigation. |
-| `uevsc.trace` | `false` | Logs per-file parsing details to the output channel. |
+| Setting                              | Default                                    | Purpose                                                 |
+| ------------------------------------ | ------------------------------------------ | ------------------------------------------------------- |
+| `uevsc.enabled`                      | `true`                                     | Enables indexing and providers.                         |
+| `uevsc.include`                      | `**/*.{h,hh,hpp,hxx,c,cc,cpp,cxx,inl,ipp}` | Workspace files to index.                               |
+| `uevsc.exclude`                      | Unreal build/generated directories         | Files omitted from initial indexing.                    |
+| `uevsc.maxFileSizeKb`                | `1024`                                     | Skips unusually large source files.                     |
+| `uevsc.showMissingDefinitionMessage` | `true`                                     | Shows a short status message for unresolved navigation. |
+| `uevsc.trace`                        | `false`                                    | Logs per-file parsing details to the output channel.    |
 
 `Binaries`, `Build`, `DerivedDataCache`, `Intermediate`, `Saved`, `.git`, and `node_modules` are always ignored by live file watching.
 
@@ -81,7 +82,9 @@ The implementation is split into independent layers:
 
 - `src/parser`: tolerant Tree-sitter C++ symbol extraction and UE annotation masking;
 - `src/index`: in-memory per-file storage and syntax-level resolution;
+- `src/language`: shared C/C++ language facts used by editor features;
 - `src/vscode`: editor adapters and hover/definition providers;
+- `syntaxes`: Unreal-specific TextMate injection rules layered onto VS Code's C++ grammar;
 - `src/extension.ts`: activation, commands, configuration, and lifecycle.
 
 The parser and resolver have no dependency on the VS Code API, which keeps them directly testable and provides a clean base for future include graphs, inheritance lookup, incremental syntax trees, workspace persistence, references, and outline features.
